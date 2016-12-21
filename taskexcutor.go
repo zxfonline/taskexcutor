@@ -6,12 +6,12 @@ package taskexcutor
 import (
 	"container/list"
 	"errors"
-	"fmt"
 	"time"
 
 	"sync"
 
 	"github.com/zxfonline/chanutil"
+	"github.com/zxfonline/gerror"
 	"github.com/zxfonline/golog"
 )
 
@@ -31,16 +31,7 @@ func (c TaskExcutor) Close() {
 	close(c)
 }
 func (c TaskExcutor) Excute(task *TaskService) (err error) {
-	defer func() {
-		if e := recover(); e != nil {
-			switch e.(type) {
-			case error:
-				err = e.(error)
-			default:
-				err = fmt.Errorf("%v", e)
-			}
-		}
-	}()
+	defer gerror.PanicToErr(&err)
 	c <- task
 	return
 }
