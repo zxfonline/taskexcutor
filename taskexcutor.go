@@ -1,6 +1,7 @@
 // Copyright 2016 zxfonline@sina.com. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
 package taskexcutor
 
 import (
@@ -20,6 +21,26 @@ var (
 	PoolFullError   = errors.New("task pool full")
 )
 
+var (
+	_GExcutor Excutor
+	onceInit  sync.Once
+)
+
+func GExcutor() Excutor {
+	if _GExcutor == nil {
+		onceInit.Do(func() {
+			_GExcutor = NewTaskPoolExcutor(golog.New("GExcutor"), 1, 0xFFFF, false, 0)
+		})
+	}
+	return _GExcutor
+}
+
+func SetGExcutor(excutor Excutor) {
+	if _GExcutor != nil {
+		panic(errors.New("_GExcutor has been inited."))
+	}
+	_GExcutor = excutor
+}
 func NewTaskExcutor(chanSize int) TaskExcutor {
 	return make(chan *TaskService, chanSize)
 }
@@ -42,10 +63,14 @@ type CallBack func(...interface{})
 type TaskService struct {
 	callback CallBack
 	args     []interface{}
+	Cancel   bool //是否取消回调
 }
 
 //代理执行
 func (t *TaskService) Call(logger *golog.Logger) {
+	if t.Cancel {
+		return
+	}
 	defer func() {
 		if e := recover(); e != nil {
 			logger.Warnf("recover task service error:%v", e)
