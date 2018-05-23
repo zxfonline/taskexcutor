@@ -87,7 +87,7 @@ func (t *TaskService) SetArgs(args ...interface{}) *TaskService {
 
 //重置指定下标的参数
 func (t *TaskService) SetArg(index int, arg interface{}) {
-	if index < 0 || index+1 >= len(t.args) {
+	if index < 0 || index+1 > len(t.args) {
 		return
 	}
 	t.args[index] = arg
@@ -95,7 +95,7 @@ func (t *TaskService) SetArg(index int, arg interface{}) {
 
 //获取指定下标的参数
 func (t *TaskService) GetArg(index int) interface{} {
-	if index < 0 || index+1 >= len(t.args) {
+	if index < 0 || index+1 > len(t.args) {
 		return nil
 	}
 	return t.args[index]
