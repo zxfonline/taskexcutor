@@ -64,6 +64,7 @@ type TaskService struct {
 	callback CallBack
 	args     []interface{}
 	Cancel   bool //是否取消回调
+	ID       interface{}
 }
 
 //代理执行
@@ -87,7 +88,7 @@ func (t *TaskService) SetArgs(args ...interface{}) *TaskService {
 
 //重置指定下标的参数
 func (t *TaskService) SetArg(index int, arg interface{}) {
-	if index < 0 || index+1 > len(t.args) {
+	if index < 0 || index+1 >= len(t.args) {
 		return
 	}
 	t.args[index] = arg
@@ -95,7 +96,7 @@ func (t *TaskService) SetArg(index int, arg interface{}) {
 
 //获取指定下标的参数
 func (t *TaskService) GetArg(index int) interface{} {
-	if index < 0 || index+1 > len(t.args) {
+	if index < 0 || index+1 >= len(t.args) {
 		return nil
 	}
 	return t.args[index]
@@ -103,14 +104,14 @@ func (t *TaskService) GetArg(index int) interface{} {
 
 //添加回调函数参数,startIndex<0表示顺序添加,startIndex>=0表示将参数从指定位置开始添加，原来位置的参数依次后移
 func (t *TaskService) AddArgs(startIndex int, args ...interface{}) *TaskService {
-	lenth := len(args)
-	if lenth > 0 {
+	length := len(args)
+	if length > 0 {
 		stmp := t.args
 		slenth := len(stmp)
 		if startIndex < 0 {
 			t.args = append(stmp, args...)
 		} else if startIndex >= slenth {
-			tl := startIndex + lenth
+			tl := startIndex + length
 			temp := make([]interface{}, tl, tl)
 			if slenth > 0 {
 				copy(temp, stmp[0:slenth])
@@ -118,14 +119,14 @@ func (t *TaskService) AddArgs(startIndex int, args ...interface{}) *TaskService 
 			copy(temp[startIndex:], args)
 			t.args = temp
 		} else {
-			tl := slenth + lenth
+			tl := slenth + length
 			temp := make([]interface{}, tl, tl)
 			mv := stmp[startIndex:slenth]
 			if startIndex > 0 {
 				copy(temp, stmp[0:startIndex])
 			}
-			copy(temp[startIndex:startIndex+lenth], args)
-			copy(temp[startIndex+lenth:], mv)
+			copy(temp[startIndex:startIndex+length], args)
+			copy(temp[startIndex+length:], mv)
 			t.args = temp
 		}
 	}
@@ -133,8 +134,8 @@ func (t *TaskService) AddArgs(startIndex int, args ...interface{}) *TaskService 
 }
 
 func NewTaskService(callback CallBack, params ...interface{}) *TaskService {
-	lenth := len(params)
-	temp := make([]interface{}, 0, lenth)
+	length := len(params)
+	temp := make([]interface{}, 0, length)
 	temp = append(temp, params...)
 	return &TaskService{callback: callback, args: temp}
 }
