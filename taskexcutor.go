@@ -54,6 +54,9 @@ func (c TaskExcutor) Close() {
 func (c TaskExcutor) Excute(task *TaskService) (err error) {
 	defer gerror.PanicToErr(&err)
 	c <- task
+	if wait := len(c); wait > cap(c)/10*6 && wait%100 == 0 {
+		golog.Warnf("task excutor taskchan process,waitchan:%d/%d.", wait, cap(c))
+	}
 	return
 }
 
@@ -235,7 +238,10 @@ func (p *MultiplePoolExcutor) Excute(task *TaskService) error {
 	case <-p.closeD:
 		return PoolStopedError
 	default:
-		p.taskchan <- task
+		p.taskchan <- task //阻塞等待
+		if wait := len(p.taskchan); wait > cap(p.taskchan)/10*6 && wait%100 == 0 {
+			p.Logger.Warnf("taskpool excutor taskchan process,waitchan:%d/%d.", wait, cap(p.taskchan))
+		}
 		return nil
 	}
 }
