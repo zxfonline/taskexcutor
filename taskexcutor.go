@@ -29,7 +29,7 @@ var (
 func GExcutor() Excutor {
 	if _GExcutor == nil {
 		onceInit.Do(func() {
-			_GExcutor = NewTaskPoolExcutor(golog.New("GExcutor"), 1, 0xFFFF, false, 0)
+			_GExcutor = NewTaskPoolExcutor(golog.New("GExcutor"), 1, 10000, false, 0)
 		})
 	}
 	return _GExcutor
@@ -77,7 +77,7 @@ func (t *TaskService) Call(logger *golog.Logger) {
 	}
 	defer func() {
 		if e := recover(); e != nil {
-			logger.Warnf("recover task service error:%v", e)
+			logger.Errorf("recover task service error:%v", e)
 		}
 	}()
 	t.callback(t.args...)
