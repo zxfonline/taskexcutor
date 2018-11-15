@@ -22,19 +22,22 @@ var (
 )
 
 var (
-	_GExcutor Excutor
-	onceInit  sync.Once
+	_GExcutor   Excutor
+	_chanLogger = golog.New("GExcutor")
+	onceInit    sync.Once
 )
 
+//GExcutor 全局任务执行器
 func GExcutor() Excutor {
 	if _GExcutor == nil {
 		onceInit.Do(func() {
-			_GExcutor = NewTaskPoolExcutor(golog.New("GExcutor"), 1, 10000, false, 0)
+			_GExcutor = NewTaskPoolExcutor(_chanLogger, 1, 10000, false, 0)
 		})
 	}
 	return _GExcutor
 }
 
+//SetGExcutor 设置全局任务执行器
 func SetGExcutor(excutor Excutor) {
 	if _GExcutor != nil {
 		panic(errors.New("_GExcutor has been inited."))
@@ -51,6 +54,13 @@ func (c TaskExcutor) Close() {
 	defer func() { recover() }()
 	close(c)
 }
+
+//GetLogger 日志处理器
+func (c TaskExcutor) GetLogger() *golog.Logger {
+	return _chanLogger
+}
+
+//Excute 任务执行
 func (c TaskExcutor) Excute(task *TaskService) (err error) {
 	defer gerror.PanicToErr(&err)
 	c <- task
@@ -60,9 +70,10 @@ func (c TaskExcutor) Excute(task *TaskService) (err error) {
 	return
 }
 
-//事件回调
+//CallBack 事件回调
 type CallBack func(...interface{})
 
+//TaskService 执行器任务
 type TaskService struct {
 	callback CallBack
 	args     []interface{}
@@ -70,7 +81,7 @@ type TaskService struct {
 	ID       interface{}
 }
 
-//代理执行
+//Call 代理执行
 func (t *TaskService) Call(logger *golog.Logger) {
 	if t.Cancel {
 		return
@@ -83,13 +94,13 @@ func (t *TaskService) Call(logger *golog.Logger) {
 	t.callback(t.args...)
 }
 
-//重置参数
+//SetArgs 重置参数
 func (t *TaskService) SetArgs(args ...interface{}) *TaskService {
 	t.args = args
 	return t
 }
 
-//重置指定下标的参数
+//SetArg 重置指定下标的参数
 func (t *TaskService) SetArg(index int, arg interface{}) {
 	if index < 0 || index+1 >= len(t.args) {
 		return
@@ -97,7 +108,7 @@ func (t *TaskService) SetArg(index int, arg interface{}) {
 	t.args[index] = arg
 }
 
-//获取指定下标的参数
+//GetArg 获取指定下标的参数
 func (t *TaskService) GetArg(index int) interface{} {
 	if index < 0 || index+1 >= len(t.args) {
 		return nil
@@ -105,7 +116,7 @@ func (t *TaskService) GetArg(index int) interface{} {
 	return t.args[index]
 }
 
-//添加回调函数参数,startIndex<0表示顺序添加,startIndex>=0表示将参数从指定位置开始添加，原来位置的参数依次后移
+//AddArgs 添加回调函数参数,startIndex<0表示顺序添加,startIndex>=0表示将参数从指定位置开始添加，原来位置的参数依次后移
 func (t *TaskService) AddArgs(startIndex int, args ...interface{}) *TaskService {
 	length := len(args)
 	if length > 0 {
@@ -136,6 +147,7 @@ func (t *TaskService) AddArgs(startIndex int, args ...interface{}) *TaskService 
 	return t
 }
 
+//NewTaskService 任务执行器任务
 func NewTaskService(callback CallBack, params ...interface{}) *TaskService {
 	length := len(params)
 	temp := make([]interface{}, 0, length)
@@ -143,11 +155,13 @@ func NewTaskService(callback CallBack, params ...interface{}) *TaskService {
 	return &TaskService{callback: callback, args: temp}
 }
 
-//任务执行器
+//Excutor 任务执行器
 type Excutor interface {
-	//执行方法
+	//Excute 执行方法
 	Excute(task *TaskService) error
-	//执行器关闭方法
+	//GetLogger 日志处理器
+	GetLogger() *golog.Logger
+	//Close 执行器关闭方法
 	Close()
 }
 
@@ -183,7 +197,7 @@ func (c *poolexcutor) excute(taskChan chan *TaskService, waitD chanutil.DoneChan
 	}
 }
 
-//并发执行器
+//MultiplePoolExcutor 并发任务执行器
 type MultiplePoolExcutor struct {
 	//任务缓冲池
 	taskchan chan *TaskService
@@ -201,6 +215,7 @@ type MultiplePoolExcutor struct {
 	Logger   *golog.Logger
 }
 
+//NewTaskPoolExcutor 并发任务执行池
 func NewTaskPoolExcutor(logger *golog.Logger, poolSize, chanSize uint, shutdownNow bool, shutdownWait time.Duration) Excutor {
 	wgExcutor := &sync.WaitGroup{}
 	taskchan := make(chan *TaskService, chanSize)
@@ -232,7 +247,12 @@ func NewTaskPoolExcutor(logger *golog.Logger, poolSize, chanSize uint, shutdownN
 	return p
 }
 
-//Excutor.Excute()
+//GetLogger 日志处理器
+func (p *MultiplePoolExcutor) GetLogger() *golog.Logger {
+	return p.Logger
+}
+
+//Excute 执行方法
 func (p *MultiplePoolExcutor) Excute(task *TaskService) error {
 	select {
 	case <-p.closeD:
@@ -259,7 +279,7 @@ func (p *MultiplePoolExcutor) clear() {
 	p.waitdone()
 }
 
-//Excutor.Close()
+//Close 执行器关闭方法
 func (p *MultiplePoolExcutor) Close() {
 	p.closeOnce.Do(func() {
 		p.closeD.SetDone()
