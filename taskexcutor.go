@@ -221,7 +221,7 @@ type MultiplePoolExcutor struct {
 func NewTaskPoolExcutor(logger *golog.Logger, poolSize, chanSize uint, shutdownNow bool, shutdownWait time.Duration) Excutor {
 	wgExcutor := &sync.WaitGroup{}
 	taskchan := make(chan *TaskService, chanSize)
-	expvar.RegistChanMonitor("chanMultiExcutor", taskchan)
+	//	expvar.RegistChanMonitor("chanMultiExcutor", taskchan)
 	waitD := chanutil.NewDoneChan()
 	p := &MultiplePoolExcutor{
 		excutors:     list.New(),
