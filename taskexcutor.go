@@ -32,7 +32,7 @@ var (
 func GExcutor() Excutor {
 	if _GExcutor == nil {
 		onceInit.Do(func() {
-			SetGExcutor(NewTaskPoolExcutor(_chanLogger, 1, 10000, false, 0))
+			SetGExcutor(NewTaskPoolExcutor(_chanLogger, 1, 0x10000, false, 0))
 		})
 	}
 	return _GExcutor
